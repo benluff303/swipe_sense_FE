@@ -1,10 +1,9 @@
 import streamlit as st
 import requests
 import pandas as pd
+from GPT_itinirary import generate_itinerary, itinerary_to_markdown  # Import your functions
 
-#SwipeSense frontend
-
-#This front queries the SwipeSense [SBERT model API](https://........)
+# SwipeSense frontend
 
 images = [
     "https://picsum.photos/400/300?random=1",
@@ -27,7 +26,7 @@ images = [
     "https://picsum.photos/400/300?random=18",
     "https://picsum.photos/400/300?random=19",
     "https://picsum.photos/400/300?random=20"
-    ]
+]
 
 MAX_IMAGES = 20
 
@@ -71,7 +70,6 @@ else:
     st.success("✅ Thank you for your input!")
     st.write("Your journey awaits...")
 
-
     if st.session_state.responses:
         SwipeSense_url = "https://api.com/endpoint"
 
@@ -83,30 +81,36 @@ else:
             response = requests.post(SwipeSense_url, json=user)
             response.raise_for_status()
 
-            # API call succeeds -->
+            # API call succeeds
             data = response.json()
 
             # Convert to DataFrame
             df = pd.DataFrame(data)
 
-            # Show locations
+            # Show top locations
             if "location" in df.columns:
-                df = df[["location"]]
+                df_top_cities = df[["location", "keywords"]].drop_duplicates().head(5)
 
                 st.header("Top 5 destinations for you:")
-                for i, row in df.iterrows():
+                for i, row in df_top_cities.iterrows():
                     st.write(f"{i+1}. **{row['location']}**")
+
+                # Generate itinerary for these top cities
+                st.header("Your 5-day itinerary:")
+                itinerary_result = generate_itinerary(df_top_cities)
+
+                # Convert to pretty Markdown
+                markdown_itinerary = itinerary_to_markdown(itinerary_result)
+                st.markdown(markdown_itinerary)
 
             else:
                 st.warning("No destinations returned. Try again later.")
 
-        # Something needed here for itiniraries
-
         except Exception as e:
             st.error(f"Something went wrong while fetching predictions: {e}")
-
 
     if st.button("Restart"):
         st.session_state.index = 0
         st.session_state.responses = []
+        st.session_state.num_days = None
         st.rerun()
