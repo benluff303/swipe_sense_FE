@@ -53,17 +53,7 @@ def generate_itinerary(top_locations: pd.DataFrame):
         )
 
         # Extract GPT content
-        gpt_output = response.choices[0].message.content
-
-        # Clean any markdown or code fences if present
-        if isinstance(gpt_output, str):
-            gpt_output_clean = re.sub(r"^```json\s*|\s*```$", "", gpt_output.strip(), flags=re.MULTILINE)
-            try:
-                itinerary_dict = json.loads(gpt_output_clean)
-            except json.JSONDecodeError:
-                itinerary_dict = {"error": "Could not parse JSON", "raw_output": gpt_output_clean}
-        else:
-            itinerary_dict = gpt_output
+        itinerary_dict = response.choices[0].message.content
 
         # Convert to DataFrame
         rows = []
