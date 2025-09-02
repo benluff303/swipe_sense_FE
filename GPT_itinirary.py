@@ -3,75 +3,76 @@ import pandas as pd
 import json
 import re
 
-client = OpenAI(api_key="API_key")
+client = OpenAI(api_key="APIKEY")
 
-# @app.post("/generate_itinerary", response_model=ItineraryResponse)
 def generate_itinerary(top_locations: pd.DataFrame):
     """
-    Generate a 5-day itinerary for the top 5 cities from a DataFrame.
+    Generate 5-day itineraries for the top 5 cities from a DataFrame in one GPT call.
     Returns a dict {city_name: {"df": DataFrame}}.
     """
 
-    # Extract top cities and keywords from DataFrame
-    df = top_locations.to_dict(orient="records")
-    top_cities = list({entry['location'] for entry in df})[:5]
-    keywords = list({entry['keywords'] for entry in df})
+    # Keep order from DataFrame (instead of using set)
+    top_city = top_locations['location'].iloc[0]
+    keywords = top_locations['keywords'].drop_duplicates().tolist()
 
-    all_itineraries = {}
+    # GPT prompt for ALL cities at once
+    prompt = f"""
+    Create a separate 5-day itinerary for the following city: {top_city}.
+    Use these holiday preferences: {', '.join(keywords)}.
 
-    for city in top_cities:
-        # GPT prompt for each city
-        prompt = f"""
-        Create a 5-day itinerary for {city} using these holiday preferences: {', '.join(keywords)}.
+    Requirements:
+    - Each day should have 3-4 activities with times (e.g., "09:00", "12:30").
+    - Include the location for each activity.
+    - Output MUST be structured JSON like this:
 
-        Requirements:
-        - Each day should have 3-4 activities with times (e.g., "09:00", "12:30").
-        - Include the location for each activity.
-        - Output MUST be structured JSON like this:
+    {{
+        "Day 1": [
+            {{"time": "09:00", "activity": "...", "location": "{top_city}"}},
+            {{"time": "12:30", "activity": "...", "location": "{top_city}"}},
+            {{"time": "15:30", "activity": "...", "location": "{top_city}"}}
+        ],
+        "Day 2": [ ... ],
+        "Day 3": [ ... ],
+        "Day 4": [ ... ],
+        "Day 5": [ ... ]
+    }}
+    """
 
-        {{
-            "Day 1": [
-                {{"time": "09:00", "activity": "...", "location": "{city}"}},
-                {{"time": "12:30", "activity": "...", "location": "{city}"}},
-                {{"time": "15:30", "activity": "...", "location": "{city}"}}
-            ],
-            "Day 2": [ ... ],
-            "Day 3": [ ... ],
-            "Day 4": [ ... ],
-            "Day 5": [ ... ]
-        }}
-        """
+    # One GPT call
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": "You are a helpful travel planner."},
+            {"role": "user", "content": prompt}
+        ]
+    )
 
-        # Call GPT
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": "You are a helpful travel planner."},
-                {"role": "user", "content": prompt}
-            ]
-        )
+    # Extract GPT content
+    gpt_output = response.choices[0].message.content
 
-        # Extract GPT content
-        itinerary_dict = response.choices[0].message.content
+    # Clean any markdown/code fences
+    gpt_output_clean = re.sub(r"^```json\s*|\s*```$", "", gpt_output.strip(), flags=re.MULTILINE)
 
-        # Convert to DataFrame
-        rows = []
-        if isinstance(itinerary_dict, dict) and "error" not in itinerary_dict:
-            for day, activities in itinerary_dict.items():
-                for act in activities:
-                    rows.append({
-                        "Day": day,
-                        "Time": act.get("time", "??:??"),
-                        "Activity": act.get("activity", ""),
-                        "Location": act.get("location", city)
-                    })
-        df_itinerary = pd.DataFrame(rows)
+    try:
+        itinerary_dict = json.loads(gpt_output_clean)
+    except json.JSONDecodeError:
+        return {"error": "Could not parse JSON", "raw_output": gpt_output_clean}
 
-        # Store as DataFrame per city
-        all_itineraries[city] = {"df": df_itinerary}
+    # Convert JSON to DataFrame
+    rows = []
+    if isinstance(itinerary_dict, dict) and "error" not in itinerary_dict:
+        for day, activities in itinerary_dict.items():
+            for act in activities:
+                rows.append({
+                    "Day": day,
+                    "Time": act.get("time", "??:??"),
+                    "Activity": act.get("activity", ""),
+                    "Location": act.get("location", top_city)
+                })
+    df_itinerary = pd.DataFrame(rows)
 
-    return all_itineraries
+    return {top_city: {"df": df_itinerary}}
 
 def itinerary_to_markdown(itinerary_dict: dict) -> str:
     """
@@ -81,7 +82,7 @@ def itinerary_to_markdown(itinerary_dict: dict) -> str:
     lines = []
 
     for city, content in itinerary_dict.items():
-        lines.append(f"# {city}\n")  # City title
+        lines.append(f"### {city} ###\n")  # City title
 
         df = content.get("df")
         if df is None or df.empty:
