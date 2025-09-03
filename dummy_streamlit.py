@@ -100,29 +100,54 @@ st.divider()
 
 if st.button("Get itinerary"):
     #hardcode for now but this will be an api request of a dict containing locations and phrases, e.g.:
-    # api_response = {
-    #     "locations": [
-    #         {"rank": 1, "name": "Québec City"},
-    #         {"rank": 2, "name": "Seoul"},
-    #         {"rank": 3, "name": "London"},
-    #         {"rank": 4, "name": "Toronto"},
-    #         {"rank": 5, "name": "Clacton"}
-    #     ],
-    #     "phrases": [
-    #         "beach holiday",
-    #         "mountain escape"
-    #         "beach holiday",
-    #         "mountain escape",
-    #         "mountain escape"
-    #     ]
-    # }
+    #unused
+    api_response = {
+          "locations": [
+            "Québec City",
+            "Seoul"
+            "London",
+            "Toronto",
+            "Clacton"
+        ],
+        "phrases": [
+            "beach holiday",
+            "mountain escape"
+            "beach holiday",
+            "mountain escape",
+            "mountain escape"
+        ]
+    }
 
-    # locations = api_response['locations']
-    # phrases = api_response['phrases']
+    api_response = {
+        "locations":
+        [{"location": "Bariloche", "combined_score":0.8447093820002858},
+         {"location":"Hong Kong","combined_score":0.7035136820583936},
+         {"location":"Interlaken","combined_score":0.6597705607685682},
+         {"location":"Lofoten Islands","combined_score":0.6403650713268992},
+         {"location":"Lake Titicaca","combined_score":0.6309902693763838}
+        ],
+        "phrases":
+            ["a scene of a mountain",
+             "a travel scene that feels contemplative",
+             "a rocky or mountainous place where someone could do rock climbing",
+             "a travel scene that feels rugged",
+             "a travel scene that feels sombre"
+             ]
+    }
 
     # Generate itinerary
-    api_response = requests.get(f"{API}/user_profile/{user_id}").json()
+    # api_response = requests.get(f"{API}/user_to_keywords/").json()
+
+    locations = api_response['locations']
+    phrases = api_response['phrases']
+    #for testing, showing scores
+    st.header("Your Top 5 locations:")
+    st.dataframe(pd.DataFrame(data=locations))
+    city_names = [loc["location"] for loc in locations]
+
+
+    # st.markdown(locations)
     st.header("Your itinerary:")
-    itinerary_result = generate_itinerary(api_response)
+    itinerary_result = generate_itinerary(city_names, phrases)
     markdown_itinerary = itinerary_to_markdown(itinerary_result)
     st.markdown(markdown_itinerary)
