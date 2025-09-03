@@ -2,17 +2,19 @@ from openai import OpenAI
 import pandas as pd
 import json
 import re
+import os
 
-client = OpenAI(api_key="APIKEY")
+# api_key =
+client = OpenAI(api_key=os.environ.get("OPENAI_KEY"))
 
 def generate_itinerary(locations, keywords):
     """
     Generates a 5-day itinerary for the top city from a DataFrame in one GPT call.
     Returns a dict {city_name: {"df": DataFrame}}.
     """
-
+    print("generating itinerary...")
     # Select first city from list of cities
-    top_city = locations[0]["name"]
+    top_city = locations[0]
 
     # GPT prompt for ALL cities at once
     prompt = f"""
