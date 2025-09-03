@@ -5,15 +5,14 @@ import re
 
 client = OpenAI(api_key="APIKEY")
 
-def generate_itinerary(top_locations: pd.DataFrame):
+def generate_itinerary(locations, keywords):
     """
-    Generate 5-day itineraries for the top 5 cities from a DataFrame in one GPT call.
+    Generates a 5-day itinerary for the top city from a DataFrame in one GPT call.
     Returns a dict {city_name: {"df": DataFrame}}.
     """
 
-    # Keep order from DataFrame (instead of using set)
-    top_city = top_locations['location'].iloc[0]
-    keywords = top_locations['keywords'].drop_duplicates().tolist()
+    # Select first city from list of cities
+    top_city = locations[0]["name"]
 
     # GPT prompt for ALL cities at once
     prompt = f"""
