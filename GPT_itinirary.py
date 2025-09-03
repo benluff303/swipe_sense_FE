@@ -14,7 +14,7 @@ def generate_itinerary(locations, keywords):
     """
     print("generating itinerary...")
     # Select first city from list of cities
-    top_city = locations[0]["name"]
+    top_city = locations[0]
 
     # GPT prompt for ALL cities at once
     prompt = f"""
