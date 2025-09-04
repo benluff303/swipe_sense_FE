@@ -10,7 +10,7 @@ from GPT_itinirary import generate_itinerary, itinerary_to_markdown
 
 # API = st.secrets.get("API_URL", "http://localhost:8000")  # set in .streamlit/secrets.toml optionally
 
-API = "http://127.0.0.1:8000"
+API = "https://swipesense-51860419257.europe-west2.run.app/"
 
 st.set_page_config(page_title="SwipeSense", layout="wide")
 st.title("SwipeSense — Streamlit UI")
