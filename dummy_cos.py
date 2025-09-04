@@ -307,8 +307,8 @@ if st.button("Get itinerary"):
     # }
 
     # Generate itinerary
-    api_response = requests.get(f"{API}/user_to_keywords/").json()
-    
+    api_response = requests.get(f"{API}/user_to_keywords/default").json()
+    print(api_response)
     locations = api_response['locations']
     phrases = api_response['phrases']
     #for testing, showing scores
@@ -319,9 +319,10 @@ if st.button("Get itinerary"):
 
     # st.markdown(locations)
     st.header("Your itinerary:")
-    itinerary_result = generate_itinerary(city_names, phrases)
-    markdown_itinerary = itinerary_to_markdown(itinerary_result)
-    st.markdown(markdown_itinerary)
+    with st.spinner("SwipeSense Agent Working Hard...", show_time=True):
+        itinerary_result = generate_itinerary(city_names, phrases)
+        markdown_itinerary = itinerary_to_markdown(itinerary_result)
+        st.markdown(markdown_itinerary)
 
 
 
